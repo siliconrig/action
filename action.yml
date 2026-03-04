@@ -1,0 +1,37 @@
+name: "Flashbay"
+description: "Flash and test firmware on real MCU hardware in CI/CD"
+author: "flashbay-dev"
+
+branding:
+  icon: "cpu"
+  color: "orange"
+
+inputs:
+  api-key:
+    description: "Flashbay API key"
+    required: true
+  board:
+    description: "Board type (e.g., esp32-s3)"
+    required: true
+  firmware:
+    description: "Path to firmware binary"
+    required: false
+  command:
+    description: "CLI command to run"
+    required: false
+    default: "flash-and-test"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install fbay-cli
+      shell: bash
+      run: |
+        echo "Installing fbay-cli..."
+        go install github.com/flashbay-dev/fbay-cli@latest
+    - name: Run Flashbay
+      shell: bash
+      env:
+        FLASHBAY_API_KEY: ${{ inputs.api-key }}
+      run: |
+        echo "Flashbay action not yet implemented"
