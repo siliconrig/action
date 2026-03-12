@@ -1,27 +1,59 @@
 # flashbay-action
 
-GitHub Action for [Flashbay](https://flashbay.dev) hardware-in-the-loop CI/CD.
+GitHub Action for [flashbay](https://flashbay.dev) hardware-in-the-loop CI/CD.
 
-Thin wrapper that installs the [fbay-cli](https://github.com/flashbay-dev/fbay-cli) and runs it within your GitHub Actions workflow.
-
-**Status:** Scaffold only — not yet functional.
+Downloads `fbay-cli`, creates a session, flashes firmware, captures serial output, and cleans up.
 
 ## Usage
 
 ```yaml
-- uses: flashbay-dev/flashbay-action@v1
+- uses: flashbay-dev/action@v1
   with:
     api-key: ${{ secrets.FLASHBAY_API_KEY }}
     board: esp32-s3
     firmware: build/firmware.bin
-    command: flash-and-test
+```
+
+### With custom serial timeout and log
+
+```yaml
+- uses: flashbay-dev/action@v1
+  id: hil
+  with:
+    api-key: ${{ secrets.FLASHBAY_API_KEY }}
+    board: esp32-s3
+    firmware: build/firmware.bin
+    serial-timeout: 60s
+    serial-log: test-output.txt
+
+- name: Check output
+  run: grep "System ready" ${{ steps.hil.outputs.serial-log }}
+```
+
+### Session only (no firmware)
+
+```yaml
+- uses: flashbay-dev/action@v1
+  with:
+    api-key: ${{ secrets.FLASHBAY_API_KEY }}
+    board: esp32-s3
+    firmware: ""
 ```
 
 ## Inputs
 
-| Input | Required | Description |
-|---|---|---|
-| `api-key` | Yes | Flashbay API key |
-| `board` | Yes | Board type (e.g., `esp32-s3`) |
-| `firmware` | No | Path to firmware binary |
-| `command` | No | CLI command to run (default: `flash-and-test`) |
+| Input | Required | Default | Description |
+|---|---|---|---|
+| `api-key` | Yes | | flashbay API key |
+| `board` | Yes | | Board type (e.g., `esp32-s3`) |
+| `firmware` | No | | Path to firmware binary |
+| `serial-timeout` | No | `30s` | Serial capture duration |
+| `serial-log` | No | `serial-output.txt` | File to save serial output |
+| `cli-version` | No | `latest` | fbay-cli version to install |
+
+## Outputs
+
+| Output | Description |
+|---|---|
+| `session-id` | The session ID that was created |
+| `serial-log` | Path to the serial output log file |

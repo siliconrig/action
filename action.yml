@@ -1,14 +1,14 @@
-name: "Flashbay"
+name: "flashbay"
 description: "Flash and test firmware on real MCU hardware in CI/CD"
 author: "flashbay-dev"
 
 branding:
   icon: "cpu"
-  color: "orange"
+  color: "green"
 
 inputs:
   api-key:
-    description: "Flashbay API key"
+    description: "flashbay API key"
     required: true
   board:
     description: "Board type (e.g., esp32-s3)"
@@ -16,10 +16,26 @@ inputs:
   firmware:
     description: "Path to firmware binary"
     required: false
-  command:
-    description: "CLI command to run"
+  serial-timeout:
+    description: "Serial capture duration (e.g., 30s, 2m)"
     required: false
-    default: "flash-and-test"
+    default: "30s"
+  serial-log:
+    description: "File to save serial output"
+    required: false
+    default: "serial-output.txt"
+  cli-version:
+    description: "fbay-cli version to install (default: latest)"
+    required: false
+    default: "latest"
+
+outputs:
+  session-id:
+    description: "The session ID that was created"
+    value: ${{ steps.session.outputs.session_id }}
+  serial-log:
+    description: "Path to the serial output log file"
+    value: ${{ inputs.serial-log }}
 
 runs:
   using: "composite"
@@ -27,11 +43,61 @@ runs:
     - name: Install fbay-cli
       shell: bash
       run: |
-        echo "Installing fbay-cli..."
-        go install github.com/flashbay-dev/fbay-cli@latest
-    - name: Run Flashbay
+        if [ "${{ inputs.cli-version }}" = "latest" ]; then
+          TAG=$(curl -s https://api.github.com/repos/flashbay-dev/fbay-cli/releases/latest | jq -r .tag_name)
+        else
+          TAG="${{ inputs.cli-version }}"
+        fi
+
+        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+        ARCH=$(uname -m)
+        case "$ARCH" in
+          x86_64)  ARCH="amd64" ;;
+          aarch64) ARCH="arm64" ;;
+          armv7l)  ARCH="armv7" ;;
+        esac
+
+        URL="https://github.com/flashbay-dev/fbay-cli/releases/download/${TAG}/fbay-${OS}-${ARCH}"
+        echo "Downloading fbay-cli ${TAG} for ${OS}/${ARCH}..."
+        curl -sL "$URL" -o /usr/local/bin/fbay
+        chmod +x /usr/local/bin/fbay
+        fbay version
+
+    - name: Create session
+      id: session
       shell: bash
       env:
         FLASHBAY_API_KEY: ${{ inputs.api-key }}
       run: |
-        echo "Flashbay action not yet implemented"
+        SESSION=$(fbay session create --board "${{ inputs.board }}" --json | jq -r .id)
+        echo "session_id=${SESSION}" >> "$GITHUB_OUTPUT"
+        echo "Session created: ${SESSION}"
+
+    - name: Flash firmware
+      if: inputs.firmware != ''
+      shell: bash
+      env:
+        FLASHBAY_API_KEY: ${{ inputs.api-key }}
+      run: |
+        fbay flash "${{ inputs.firmware }}" --session "${{ steps.session.outputs.session_id }}"
+
+    - name: Capture serial output
+      if: inputs.firmware != ''
+      shell: bash
+      env:
+        FLASHBAY_API_KEY: ${{ inputs.api-key }}
+      run: |
+        fbay serial \
+          --session "${{ steps.session.outputs.session_id }}" \
+          --timeout "${{ inputs.serial-timeout }}" \
+          --log "${{ inputs.serial-log }}" || true
+        echo "--- Serial output ---"
+        cat "${{ inputs.serial-log }}" 2>/dev/null || echo "(no output captured)"
+
+    - name: End session
+      if: always()
+      shell: bash
+      env:
+        FLASHBAY_API_KEY: ${{ inputs.api-key }}
+      run: |
+        fbay session end "${{ steps.session.outputs.session_id }}" || true
