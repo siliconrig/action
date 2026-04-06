@@ -57,9 +57,10 @@ runs:
           armv7l)  ARCH="armv7" ;;
         esac
 
-        URL="https://github.com/siliconrig/srig-cli/releases/download/${TAG}/srig-${OS}-${ARCH}"
+        VERSION="${TAG#v}"
+        URL="https://github.com/siliconrig/srig-cli/releases/download/${TAG}/srig_${VERSION}_${OS}_${ARCH}.tar.gz"
         echo "Downloading srig-cli ${TAG} for ${OS}/${ARCH}..."
-        curl -sL "$URL" -o /usr/local/bin/srig
+        curl -sL "$URL" | tar xz -C /usr/local/bin srig
         chmod +x /usr/local/bin/srig
         srig version
 
