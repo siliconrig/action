@@ -1,15 +1,15 @@
-# flashbay-action
+# siliconrig-action
 
-GitHub Action for [flashbay](https://flashbay.dev) hardware-in-the-loop CI/CD.
+GitHub Action for [siliconrig](https://siliconrig.dev) hardware-in-the-loop CI/CD.
 
-Downloads `fbay-cli`, creates a session, flashes firmware, captures serial output, and cleans up.
+Downloads `srig-cli`, creates a session, flashes firmware, captures serial output, and cleans up.
 
 ## Usage
 
 ```yaml
-- uses: flashbay-dev/action@v1
+- uses: siliconrig/action@v1
   with:
-    api-key: ${{ secrets.FLASHBAY_API_KEY }}
+    api-key: ${{ secrets.SRIG_API_KEY }}
     board: esp32-s3
     firmware: build/firmware.bin
 ```
@@ -17,10 +17,10 @@ Downloads `fbay-cli`, creates a session, flashes firmware, captures serial outpu
 ### With custom serial timeout and log
 
 ```yaml
-- uses: flashbay-dev/action@v1
+- uses: siliconrig/action@v1
   id: hil
   with:
-    api-key: ${{ secrets.FLASHBAY_API_KEY }}
+    api-key: ${{ secrets.SRIG_API_KEY }}
     board: esp32-s3
     firmware: build/firmware.bin
     serial-timeout: 60s
@@ -33,9 +33,9 @@ Downloads `fbay-cli`, creates a session, flashes firmware, captures serial outpu
 ### Session only (no firmware)
 
 ```yaml
-- uses: flashbay-dev/action@v1
+- uses: siliconrig/action@v1
   with:
-    api-key: ${{ secrets.FLASHBAY_API_KEY }}
+    api-key: ${{ secrets.SRIG_API_KEY }}
     board: esp32-s3
     firmware: ""
 ```
@@ -44,12 +44,12 @@ Downloads `fbay-cli`, creates a session, flashes firmware, captures serial outpu
 
 | Input | Required | Default | Description |
 |---|---|---|---|
-| `api-key` | Yes | | flashbay API key |
+| `api-key` | Yes | | siliconrig API key |
 | `board` | Yes | | Board type (e.g., `esp32-s3`) |
 | `firmware` | No | | Path to firmware binary |
 | `serial-timeout` | No | `30s` | Serial capture duration |
 | `serial-log` | No | `serial-output.txt` | File to save serial output |
-| `cli-version` | No | `latest` | fbay-cli version to install |
+| `cli-version` | No | `latest` | srig-cli version to install |
 
 ## Outputs
 

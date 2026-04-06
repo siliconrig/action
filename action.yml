@@ -1,6 +1,6 @@
-name: "flashbay"
+name: "siliconrig"
 description: "Flash and test firmware on real MCU hardware in CI/CD"
-author: "flashbay-dev"
+author: "siliconrig"
 
 branding:
   icon: "cpu"
@@ -8,7 +8,7 @@ branding:
 
 inputs:
   api-key:
-    description: "flashbay API key"
+    description: "siliconrig API key"
     required: true
   board:
     description: "Board type (e.g., esp32-s3)"
@@ -25,7 +25,7 @@ inputs:
     required: false
     default: "serial-output.txt"
   cli-version:
-    description: "fbay-cli version to install (default: latest)"
+    description: "srig-cli version to install (default: latest)"
     required: false
     default: "latest"
 
@@ -40,11 +40,11 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Install fbay-cli
+    - name: Install srig-cli
       shell: bash
       run: |
         if [ "${{ inputs.cli-version }}" = "latest" ]; then
-          TAG=$(curl -s https://api.github.com/repos/flashbay-dev/fbay-cli/releases/latest | jq -r .tag_name)
+          TAG=$(curl -s https://api.github.com/repos/siliconrig/srig-cli/releases/latest | jq -r .tag_name)
         else
           TAG="${{ inputs.cli-version }}"
         fi
@@ -57,19 +57,19 @@ runs:
           armv7l)  ARCH="armv7" ;;
         esac
 
-        URL="https://github.com/flashbay-dev/fbay-cli/releases/download/${TAG}/fbay-${OS}-${ARCH}"
-        echo "Downloading fbay-cli ${TAG} for ${OS}/${ARCH}..."
-        curl -sL "$URL" -o /usr/local/bin/fbay
-        chmod +x /usr/local/bin/fbay
-        fbay version
+        URL="https://github.com/siliconrig/srig-cli/releases/download/${TAG}/srig-${OS}-${ARCH}"
+        echo "Downloading srig-cli ${TAG} for ${OS}/${ARCH}..."
+        curl -sL "$URL" -o /usr/local/bin/srig
+        chmod +x /usr/local/bin/srig
+        srig version
 
     - name: Create session
       id: session
       shell: bash
       env:
-        FLASHBAY_API_KEY: ${{ inputs.api-key }}
+        SRIG_API_KEY: ${{ inputs.api-key }}
       run: |
-        SESSION=$(fbay session create --board "${{ inputs.board }}" --json | jq -r .id)
+        SESSION=$(srig session create --board "${{ inputs.board }}" --json | jq -r .id)
         echo "session_id=${SESSION}" >> "$GITHUB_OUTPUT"
         echo "Session created: ${SESSION}"
 
@@ -77,17 +77,17 @@ runs:
       if: inputs.firmware != ''
       shell: bash
       env:
-        FLASHBAY_API_KEY: ${{ inputs.api-key }}
+        SRIG_API_KEY: ${{ inputs.api-key }}
       run: |
-        fbay flash "${{ inputs.firmware }}" --session "${{ steps.session.outputs.session_id }}"
+        srig flash "${{ inputs.firmware }}" --session "${{ steps.session.outputs.session_id }}"
 
     - name: Capture serial output
       if: inputs.firmware != ''
       shell: bash
       env:
-        FLASHBAY_API_KEY: ${{ inputs.api-key }}
+        SRIG_API_KEY: ${{ inputs.api-key }}
       run: |
-        fbay serial \
+        srig serial \
           --session "${{ steps.session.outputs.session_id }}" \
           --timeout "${{ inputs.serial-timeout }}" \
           --log "${{ inputs.serial-log }}" || true
@@ -98,6 +98,6 @@ runs:
       if: always()
       shell: bash
       env:
-        FLASHBAY_API_KEY: ${{ inputs.api-key }}
+        SRIG_API_KEY: ${{ inputs.api-key }}
       run: |
-        fbay session end "${{ steps.session.outputs.session_id }}" || true
+        srig session end "${{ steps.session.outputs.session_id }}" || true
